@@ -1,0 +1,37 @@
+<section class="analytics" id="more-graphs">
+  <div class="analytics-head">
+    <div><span class="eyebrow">DATA INSIGHTS</span><h2>More graphs</h2><p>Explore outcomes in the stored loans and predictions on the test set.</p></div>
+    <span class="graph-note">Cassandra + model results</span>
+  </div>
+  <div class="insight-grid">
+    {% if cassandra.ingested %}
+    <article class="insight-card">
+      <h3>Default vs no default</h3>
+      <p>All {{ '{:,}'.format(cassandra.total) }} stored loans</p>
+      <div class="donut-wrap">
+        <div class="donut" style="background: conic-gradient(#d78358 0 {{ cassandra.rate }}%, #18856d {{ cassandra.rate }}% 100%)" role="img" aria-label="{{ cassandra.rate }} percent default, {{ (100 - cassandra.rate)|round(1) }} percent no default"><div><strong>{{ cassandra.rate }}%</strong><span>default</span></div></div>
+        <div class="donut-legend"><div><i class="legend-dot no-default"></i><span>No default</span><strong>{{ '{:,}'.format(cassandra.total - cassandra.defaults) }}</strong></div><div><i class="legend-dot default"></i><span>Default</span><strong>{{ '{:,}'.format(cassandra.defaults) }}</strong></div></div>
+      </div>
+    </article>
+    <article class="insight-card">
+      <h3>Default rate by employment</h3>
+      <p>Historical rate within each employment type</p>
+      {% for group in cassandra.employment %}<div class="mini-row"><div><span>{{ group.name }}</span><strong>{{ group.rate }}%</strong></div><div class="chart-track"><div class="chart-fill chosen" style="width: {{ group.rate * 4 }}%"></div></div></div>{% endfor %}
+    </article>
+    <article class="insight-card">
+      <h3>Default rate by education</h3>
+      <p>Historical rate within each education level</p>
+      {% for group in cassandra.education %}<div class="mini-row"><div><span>{{ group.name }}</span><strong>{{ group.rate }}%</strong></div><div class="chart-track"><div class="chart-fill chosen" style="width: {{ group.rate * 4 }}%"></div></div></div>{% endfor %}
+    </article>
+    {% endif %}
+    {% if metrics %}
+    <article class="insight-card">
+      <h3>Test predictions</h3>
+      <p>{{ '{:,}'.format(metrics.partitions.test) }} held-out loans · selected model</p>
+      <div class="matrix-key"><span>Actual ↓</span><span>Predicted →</span></div>
+      <div class="matrix"><div class="matrix-cell good"><strong>{{ '{:,}'.format(metrics.test.confusion_matrix[0][0]) }}</strong><span>No default correctly found</span></div><div class="matrix-cell caution"><strong>{{ '{:,}'.format(metrics.test.confusion_matrix[0][1]) }}</strong><span>False default alert</span></div><div class="matrix-cell caution"><strong>{{ '{:,}'.format(metrics.test.confusion_matrix[1][0]) }}</strong><span>Default missed</span></div><div class="matrix-cell good"><strong>{{ '{:,}'.format(metrics.test.confusion_matrix[1][1]) }}</strong><span>Default correctly found</span></div></div>
+    </article>
+    {% endif %}
+  </div>
+  <p class="chart-footnote">Group bars use a shared 0–25% scale. Group rates describe this dataset; they are not an individual borrower's probability. Test predictions come from the held-out sample.</p>
+</section>

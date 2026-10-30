@@ -1,0 +1,98 @@
+{
+  "source": "Loan_default 2.csv",
+  "engine": "PySpark ML",
+  "source_rows": 255347,
+  "rows": 200000,
+  "partitions": {
+    "train": 139838,
+    "validation": 30016,
+    "test": 30146
+  },
+  "split": "PySpark randomSplit 70/15/15, seed 42; dataset has no date field",
+  "selection_metric": "validation average precision",
+  "selected_model": "Logistic regression",
+  "threshold_selection": "validation maximum F1 on 0.02\u20130.50 grid",
+  "decision_threshold": 0.16499999999999998,
+  "validation": {
+    "Logistic regression": {
+      "prevalence": 0.11547174840085288,
+      "accuracy": 0.8022054904051172,
+      "precision": 0.28591232022179863,
+      "recall": 0.4760530871321408,
+      "f1": 0.35725885027606363,
+      "roc_auc": 0.7474011625442964,
+      "average_precision": 0.3082000539134695,
+      "confusion_matrix": [
+        [
+          22429,
+          4121
+        ],
+        [
+          1816,
+          1650
+        ]
+      ],
+      "threshold": 0.16499999999999998
+    },
+    "Decision tree": {
+      "prevalence": 0.11547174840085288,
+      "accuracy": 0.7728544776119403,
+      "precision": 0.23647798742138365,
+      "recall": 0.4339296018465089,
+      "f1": 0.30612660289029103,
+      "roc_auc": 0.660889838658673,
+      "average_precision": 0.2144320213834079,
+      "confusion_matrix": [
+        [
+          21694,
+          4856
+        ],
+        [
+          1962,
+          1504
+        ]
+      ],
+      "threshold": 0.12000000000000001
+    },
+    "Random forest": {
+      "prevalence": 0.11547174840085288,
+      "accuracy": 0.7937100213219617,
+      "precision": 0.27351279494848785,
+      "recall": 0.4748990190421235,
+      "f1": 0.34711092366090257,
+      "roc_auc": 0.7333248951612816,
+      "average_precision": 0.2952878445519233,
+      "confusion_matrix": [
+        [
+          22178,
+          4372
+        ],
+        [
+          1820,
+          1646
+        ]
+      ],
+      "threshold": 0.13999999999999999
+    }
+  },
+  "test": {
+    "prevalence": 0.11789292111722949,
+    "accuracy": 0.7981821800570557,
+    "precision": 0.2882490793438232,
+    "recall": 0.4845244794597636,
+    "f1": 0.36146095717884125,
+    "roc_auc": 0.7537066610087311,
+    "average_precision": 0.30247430568514844,
+    "confusion_matrix": [
+      [
+        22340,
+        4252
+      ],
+      [
+        1832,
+        1722
+      ]
+    ]
+  },
+  "always_no_default_accuracy": 0.8821070788827705
+}
