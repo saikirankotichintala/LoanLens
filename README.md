@@ -1,47 +1,115 @@
 # LoanLens — Loan Default Prediction with PySpark
 
-LoanLens predicts whether a loan is **likely to repay** or **at risk of not repaying**. It displays the estimated default probability and a comparison of three PySpark ML models. This is an educational project, not a lending decision system.
+LoanLens is a Flask dashboard that estimates loan default risk using PySpark ML. Enter applicant and loan details to see an estimated default probability and a prediction based on a threshold selected during validation. Apache Cassandra stores loan records and supplies the dashboard's dataset summaries.
 
-## Dataset and target
+This is an educational project, not a lending decision system. A prediction is not a guarantee of repayment or default.
 
-Kaggle dataset: [Loan Default Prediction Dataset by nikhil1e9](https://www.kaggle.com/datasets/nikhil1e9/loan-default). Its published dimensions and fields match the project dataset; the supplied local file has not been independently checked for an exact match. Download the CSV and place it in the project root as `Loan_default 2.csv` before training. Dataset files are excluded from this repository.
+## Features
 
-The project uses the user-provided `Loan_default 2.csv` in the repository root: **255,347 rows**, 16 predictor fields, `LoanID`, and `Default`. The original CSV and `Loan_default 2 copy.csv` are unchanged. The origin of the data, including whether records are real or synthetic, has not been independently verified.
+- Applicant form with input validation and live predictions from a saved Spark model.
+- Comparison of logistic regression, decision tree, and random forest models.
+- Test metrics and a confusion-matrix chart.
+- Cassandra-backed outcome distributions and default rates by loan purpose, employment, and education.
+- A read-only terminal demonstration of stored Cassandra records.
 
-`Default = 1` means a recorded default; `Default = 0` means no default recorded. The no-default label does not prove that every loan was fully repaid. `LoanID` is excluded from prediction. The 16 inputs are age, income, loan amount, credit score, months employed, number of credit lines, interest rate, loan term, debt-to-income ratio, education, employment type, marital status, mortgage, dependents, loan purpose, and co-signer. The interest rate input assumes proposed loan terms are already known.
+## Requirements and dataset
 
-## Architecture
+Install and start Docker Desktop. The application container includes Python 3.11, Java 17, and PySpark 3.5.3; a separate container runs Cassandra 4.1.
 
-1. **PySpark** reads, validates, samples, and splits the CSV.
-2. **Spark ML** encodes categories, scales features, and trains logistic regression, decision tree, and random forest models.
-3. The selected Spark model and preprocessing pipeline are saved in `outputs/spark_classifier/` and `outputs/spark_preprocessor/`. `outputs/metrics.json` stores validation and test results.
-4. **Flask** loads those Spark artifacts and uses PySpark to predict each form submission. The displayed repayment label follows a threshold selected on validation data.
-5. **Apache Cassandra** stores all 255,347 loan records in `loan_analytics.loan_records`. `category_counts` and `dataset_meta` supply the dashboard's dataset graphs and totals.
+Download the CSV from the [Loan Default Prediction Dataset by nikhil1e9 on Kaggle](https://www.kaggle.com/datasets/nikhil1e9/loan-default), then place it in the project root as:
 
-The dashboard has model comparison, outcome distribution, default rates by loan purpose, employment, and education, and a confusion-matrix chart. The supplied image at `static/loanlens-hero.png` is used as the full-page and hero background with pale text overlays.
+```text
+Loan_default 2.csv
+```
 
-To demonstrate Cassandra in a presentation, open the dashboard's **Apache Cassandra** section and run `./scripts/show-cassandra.sh` in another terminal. The script only reads the database. It shows the imported total, five stored loan records, and the same loan-purpose counts used by the dashboard graphs.
+Dataset files are excluded from Git. The supplied local dataset contains **255,347 rows** with 16 predictor fields, `LoanID`, and `Default`. It has not been independently verified as an exact match to the Kaggle download, and its real or synthetic origin has not been confirmed.
 
-## Start the project
+`Default = 1` means recorded default; `Default = 0` means no default recorded. The latter does not independently confirm full repayment. `LoanID` is excluded from model inputs.
 
-Docker Desktop must be running. From the project root:
+The predictors are age, income, loan amount, credit score, months employed, number of credit lines, interest rate, loan term, debt-to-income ratio, education, employment type, marital status, mortgage, dependents, loan purpose, and co-signer. Prediction assumes proposed loan terms, including interest rate, are already known.
+
+## Run the dashboard
+
+From the project root:
 
 ```bash
 ./scripts/start-project.sh
 ```
 
-The script reuses the existing `cassandra-db` and `loanlens-app` containers when present. Otherwise it creates them, builds the app image if needed, trains PySpark models if artifacts are missing, and imports the CSV if it is not yet in Cassandra. It does not delete existing Cassandra data. Open <http://127.0.0.1:5000>.
+Open <http://127.0.0.1:5000>. The first run can take time because it trains models and imports the dataset.
 
-To retrain explicitly with PySpark:
+The startup script:
+
+1. Creates the `smartflow-network` Docker network if needed.
+2. Starts or reuses `cassandra-db` and waits for Cassandra to become ready.
+3. Reuses `smartflow-flask:local` when available; otherwise builds or reuses `loanlens:local` from `Dockerfile.loanlens`.
+4. Trains models on a 200,000-row sample if the saved artifacts are missing.
+5. Imports the CSV into Cassandra if its dataset metadata is absent.
+6. Starts or restarts `loanlens-app` and checks its health endpoint.
+
+Cassandra data persists in a Docker volume. Existing containers and data are reused on subsequent runs.
+
+Check the application and inspect stored records:
 
 ```bash
+curl --fail http://127.0.0.1:5000/health
+./scripts/show-cassandra.sh
+```
+
+The Cassandra demonstration shows the imported total, five loan records, and the loan-purpose counts used by the dashboard. It only reads the database.
+
+## Retrain the models
+
+After the initial setup, build the project image and retrain explicitly:
+
+```bash
+docker build -f Dockerfile.loanlens -t loanlens:local .
 docker run --rm --network smartflow-network -v "$PWD:/app" -w /app \
-  smartflow-flask:local python -m src.train --data 'Loan_default 2.csv' --rows 200000
+  loanlens:local python -m src.train --data 'Loan_default 2.csv' --rows 200000
 ./scripts/start-project.sh
 ```
 
-The first command assumes the existing `smartflow-flask:local` image. On a new setup, `start-project.sh` builds `loanlens:local` from `Dockerfile.loanlens`. The app runs in Docker because PySpark needs Java. Run local checks with `.venv/bin/python -m pytest -q`.
+Training saves the preprocessing pipeline in `outputs/spark_preprocessor/`, the selected classifier in `outputs/spark_classifier/`, and evaluation results in `outputs/metrics.json`. Model directories are generated locally and excluded from Git.
 
-## Evaluation and limitations
+## Project structure
 
-The 200,000-row sample is split with PySpark `randomSplit` at roughly 70% training, 15% validation, and 15% test. The selected model maximizes validation average precision; its classification threshold maximizes validation F1 over a fixed grid. The test set is not used for model or threshold selection. The CSV has no loan date, so a future-time test is impossible. Accuracy must be read alongside default recall and precision because the majority of rows have no default. See `VERIFICATION.md` for measured results.
+| Path | Purpose |
+| --- | --- |
+| `app.py` | Flask routes, form validation, and Spark predictions |
+| `src/train.py` | Feature preparation, training, model selection, and evaluation |
+| `src/cassandra_store.py` | CSV ingestion and dashboard queries |
+| `templates/` | Dashboard templates and graphs |
+| `static/` | Styles and the LoanLens background image |
+| `scripts/start-project.sh` | Docker startup, training, and ingestion |
+| `scripts/show-cassandra.sh` | Read-only Cassandra demonstration |
+| `tests/test_project.py` | Dataset, metrics, form, and application checks |
+| `outputs/metrics.json` | Recorded model evaluation results |
+| `LoanLens_Project_Report.docx` | Project report |
+| `VERIFICATION.md` | Detailed verification results |
+
+## Evaluation
+
+The 200,000-row sample is split with PySpark `randomSplit` into approximately 70% training, 15% validation, and 15% test data. Model selection maximizes validation average precision. The decision threshold maximizes validation F1 over a fixed grid. The test set is reserved for final evaluation.
+
+The recorded run selected logistic regression with a **16.5% default-risk threshold**:
+
+| Held-out test metric | Result |
+| --- | --- |
+| Accuracy | 79.82% |
+| Default precision | 28.82% |
+| Default recall | 48.45% |
+| F1 | 36.15% |
+| ROC AUC | 0.7537 |
+| Average precision | 0.3025 |
+
+Always predicting no default achieves 88.21% accuracy on the same test set but detects no defaults. Read accuracy alongside default precision and recall. The CSV has no loan date, so a future-time evaluation is unavailable. See [VERIFICATION.md](VERIFICATION.md) for details.
+
+## Local checks
+
+With a configured Python environment, the dataset, and generated Spark artifacts available:
+
+```bash
+.venv/bin/python -m pytest -q
+```
+
+The five tests cover the dataset contract, metric helpers, form validation, dashboard and artifact checks, and prediction threshold behavior. Docker is the documented application runtime because PySpark requires Java.
