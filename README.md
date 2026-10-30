@@ -4,6 +4,8 @@ LoanLens predicts whether a loan is **likely to repay** or **at risk of not repa
 
 ## Dataset and target
 
+Kaggle dataset: [Loan Default Prediction Dataset by nikhil1e9](https://www.kaggle.com/datasets/nikhil1e9/loan-default). Its published dimensions and fields match the project dataset; the supplied local file has not been independently checked for an exact match. Download the CSV and place it in the project root as `Loan_default 2.csv` before training. Dataset files are excluded from this repository.
+
 The project uses the user-provided `Loan_default 2.csv` in the repository root: **255,347 rows**, 16 predictor fields, `LoanID`, and `Default`. The original CSV and `Loan_default 2 copy.csv` are unchanged. The origin of the data, including whether records are real or synthetic, has not been independently verified.
 
 `Default = 1` means a recorded default; `Default = 0` means no default recorded. The no-default label does not prove that every loan was fully repaid. `LoanID` is excluded from prediction. The 16 inputs are age, income, loan amount, credit score, months employed, number of credit lines, interest rate, loan term, debt-to-income ratio, education, employment type, marital status, mortgage, dependents, loan purpose, and co-signer. The interest rate input assumes proposed loan terms are already known.
