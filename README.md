@@ -42,12 +42,6 @@ docker run --rm --network smartflow-network -v "$PWD:/app" -w /app \
 
 The first command assumes the existing `smartflow-flask:local` image. On a new setup, `start-project.sh` builds `loanlens:local` from `Dockerfile.loanlens`. The app runs in Docker because PySpark needs Java. Run local checks with `.venv/bin/python -m pytest -q`.
 
-## Google Colab notebook
-
-Open `Loan_Default_Prediction.ipynb` in Google Colab and run cells from top to bottom. The first cell installs PySpark if needed and asks you to **upload `Loan_default 2.csv`**. The notebook is beginner-friendly and standalone: it loads the uploaded CSV, plots exploratory graphs, prepares features, trains three Spark ML models, compares validation scores, evaluates the held-out test set, and predicts one example applicant. It does **not** connect to Cassandra or import project source files. Colab may produce slightly different splits and results if its Spark version differs.
-
 ## Evaluation and limitations
 
 The 200,000-row sample is split with PySpark `randomSplit` at roughly 70% training, 15% validation, and 15% test. The selected model maximizes validation average precision; its classification threshold maximizes validation F1 over a fixed grid. The test set is not used for model or threshold selection. The CSV has no loan date, so a future-time test is impossible. Accuracy must be read alongside default recall and precision because the majority of rows have no default. See `VERIFICATION.md` for measured results.
-
-Earlier scikit-learn source and artifacts are preserved in `archive/sklearn-version-before-pyspark/` but are not used by the running project. Earlier traffic and attrition projects are also archived. Their Cassandra data remains untouched.

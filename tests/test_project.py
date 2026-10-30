@@ -58,12 +58,3 @@ def test_repayment_prediction_uses_trained_threshold():
     assert repayment_prediction(threshold - 0.01, threshold) == 'Likely to repay'
     assert repayment_prediction(threshold + 0.01, threshold) == 'At risk of not repaying'
     assert repayment_prediction(threshold, threshold) == 'At risk of not repaying'
-
-
-def test_colab_notebook_is_standalone_and_pyspark_based():
-    notebook = json.loads(Path('Loan_Default_Prediction.ipynb').read_text())
-    text = json.dumps(notebook).lower()
-    assert 'google.colab' in text
-    assert 'pyspark.ml' in text
-    assert 'cassandra' not in text
-    assert 'src.train' not in text
